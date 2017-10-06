@@ -62,7 +62,7 @@ let getAddress = rateLimit(limit, 1000, function (point, callback, attempts) {
   }
 
   let urlThis = urlBase + mzKey + '&layers=' + layerTypes + '&sources=' + sourceTypes + '&point.lat=' + point[latField]+ '&point.lon=' + point[lonField];
-  
+
   request(urlThis, function (error, response, body) {
     if (error) {
       console.error('encountered error', error instanceof Error ? error.stack : error);
@@ -81,6 +81,7 @@ let getAddress = rateLimit(limit, 1000, function (point, callback, attempts) {
         point['mz_city'] = featurePoint.locality || featurePoint.localadmin || '';
         point['mz_state'] = featurePoint.region_a;
         point['mz_zip'] = featurePoint.postalcode || '';
+        point['mz_country'] = featurePoint.country || '';
         point['mz_label'] = featurePoint.label;
         point['mz_confidence'] = featurePoint.confidence;
         point['mz_distance'] = featurePoint.distance;
@@ -93,6 +94,7 @@ let getAddress = rateLimit(limit, 1000, function (point, callback, attempts) {
         point['mz_city'] = '';
         point['mz_state'] = '';
         point['mz_zip'] = '';
+        point['mz_country'] = '';
         point['mz_label'] = '';
         point['mz_confidence'] = '';
         point['mz_distance'] = '';
@@ -107,18 +109,20 @@ let getAddress = rateLimit(limit, 1000, function (point, callback, attempts) {
         point['mz_backup_city'] = featurePoint2.locality || featurePoint2.localadmin || '';
         point['mz_backup_state'] = featurePoint2.region_a;
         point['mz_backup_zip'] = featurePoint2.postalcode || '';
+        point['mz_backup_country'] = featurePoint2.country || '';
         point['mz_backup_label'] = featurePoint2.label;
         point['mz_backup_confidence'] = featurePoint2.confidence;
         point['mz_backup_distance'] = featurePoint2.distance;
         point['mz_backup_source'] = featurePoint2.source;
         point['mz_backup_layer'] = featurePoint2.layer;
-        
+
       } else {
         point['mz_backup_house_number'] = '';
         point['mz_backup_hnst'] = '';
         point['mz_backup_city'] = '';
         point['mz_backup_state'] = '';
         point['mz_backup_zip'] = '';
+        point['mz_backup_country'] = '';
         point['mz_backup_label'] = '';
         point['mz_backup_confidence'] = '';
         point['mz_backup_distance'] = '';
