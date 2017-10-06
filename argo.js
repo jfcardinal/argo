@@ -15,7 +15,9 @@ let optionDefinitions = [
   { name: 'rate', alias: 'r', type: Number, defaultValue: 6 },
   { name: 'latitudefield', alias: 'n', type: String, defaultValue: 'latitude'},
   { name: 'longitudefield', alias: 'w', type: String, defaultValue: 'longitude'},
-  { name: 'pois', alias: 'p', type: Boolean}
+  { name: 'pois', alias: 'p', type: Boolean},
+  { name: 'layers', alias: 'l', type: String, defaultValue: 'address'},
+  { name: 'sources', alias: 's', type: String, defaultValue: 'oa,osm'}
 ]
 
 let options = commandLineArgs(optionDefinitions)
@@ -28,8 +30,8 @@ let outputFile = options.output || 'out_' + inputFile
 let latField = options.latitudefield
 let lonField = options.longitudefield
 let mzKey = options.auth
-let layerTypes = 'address'
-let sourceTypes = 'oa,osm'
+let layerTypes = options.layers
+let sourceTypes = options.sources
 let failures = 0;
 let successes = 0;
 
@@ -50,9 +52,11 @@ if (options.pois) {
   sourceTypes = 'oa,osm,wof'
 }
 
-let interval = setInterval(function(){
-  console.log('matched: ' + successes + ' - unmatched: ' + failures);
-}, 10000);
+let showProgress = function() {
+	console.log('matched: ' + successes + ' - unmatched: ' + failures);
+};
+
+let interval = setInterval(showProgress, 10000);
 
 let getAddress = rateLimit(limit, 1000, function (point, callback, attempts) {
   attempts = attempts || 0;
@@ -67,11 +71,15 @@ let getAddress = rateLimit(limit, 1000, function (point, callback, attempts) {
     if (error) {
       console.error('encountered error', error instanceof Error ? error.stack : error);
       getAddress(point, callback, attempts + 1);
-    } else if (response.statusCode === 429) {
+
+    } else if (response.statusCode === 408 || response.statusCode === 429) {
       getAddress(point, callback, attempts + 1);
+
     } else if (response.statusCode !== 200) {
-      console.error('non-200 status code: ' + response.statusCode);
-      getAddress(point, callback, attempts + 1);
+      body = JSON.parse(body);
+      console.error(body.geocoding.errors[0]);
+      callback();
+
     } else {
       body = JSON.parse(body);
       if (body.features[0]) {
@@ -143,8 +151,9 @@ csv
     }
   ))
   .pipe(csv.createWriteStream({headers: true}))
-  .pipe(fs.createWriteStream(outputFile))
+  .pipe(fs.createWriteStream(outputFile, {encoding: "utf8"}))
   .on('finish', function(){
-    console.log('Finished reverse geocoding file "' + outputFile + '"')
     clearInterval(interval);
+	 showProgress()
+    console.log('Finished reverse geocoding file "' + outputFile + '"')
   });
